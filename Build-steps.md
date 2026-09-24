@@ -1,13 +1,12 @@
-# Streaming input
+# External MCP servers
 
-This file describes the **steps followed** to add Concept 12 (**Streaming input mode**) to the Claude Agent SDK Lab:
+This file describes the **steps followed** to add Concept 13 (**External MCP servers**) to the Claude Agent SDK Lab:
 what was read, what was decided, how it was tested, and what the tests changed.
-To learn the concept itself (what an async iterable `prompt` does and how to use the tab), read
-[Tab12-Streaming-input.md](Tab12-Streaming-input.md).
+To learn the concept itself, read [Tab13-MCP-servers.md](Tab13-MCP-servers.md).
 
 | Concept | Topic | Routes | Explanation |
 |---|---|---|---|
-| 12 | Streaming input: one live session, queue, `priority`, images, `setModel()`, `setPermissionMode()`, `getContextUsage()` | `/api/c12/session`, `/send`, `/model`, `/permission-mode`, `/context`, `/end`, `/script` | [Tab12-Streaming-input.md](Tab12-Streaming-input.md) |
+| 13 | External MCP servers: `stdio`, `http`, status, `toggleMcpServer()`, `reconnectMcpServer()`, `setMcpServers()` | `/api/c13/query`, `/session`, `/send`, `/status`, `/toggle`, `/reconnect`, `/set-servers`, `/end`, `/mcp` | [Tab13-MCP-servers.md](Tab13-MCP-servers.md) |
 
 ## How to run it
 
@@ -15,175 +14,107 @@ To learn the concept itself (what an async iterable `prompt` does and how to use
 npm run dev        # server on http://localhost:3001, web on the Vite port
 ```
 
-`node_modules` was copied from sample11, so `npm install` is not needed. Open the **12. Streaming input** tab. Put
-`ANTHROPIC_API_KEY` in `.env` (see `.env.example`), or leave it empty to use your Claude Code login.
+`node_modules` was copied from sample12, so `npm install` is not needed. Open the **13. MCP servers** tab.
 
-> **Only one sample can run at a time.** Every sample's server uses port **3001**. If another sample is still running,
-> sample12's server can't start, Vite moves to port 5174, and its proxy sends `/api/c12/...` to the *other* sample's
-> server. That server answers **404** (see Step 9). Stop the other `npm run dev` first.
+> **Only one sample can run at a time.** Every sample's server uses port **3001**, and this concept's http MCP server
+> and stdio log URL point at `http://localhost:3001` too. Stop the other samples' `npm run dev` first.
 
 ## Step 1: Choose the feature
 
-The request asked to "implement the following feature" but no feature text came through, and `sample12/` was empty.
-The earlier samples were searched for a roadmap of Concept 12; there was none. Tabs 1 to 11 already covered `query()` →
-Skills.
-
-A quick `grep` over sample11's server showed which SDK features were still unused: external MCP servers
-(`type: "stdio" | "http"`), `setModel()`, `setPermissionMode()`, `mcpServerStatus()`, `total_cost_usd` tracking.
-Three topics were offered: **external MCP servers**, **streaming input mode** and **cost & usage tracking**.
-**Streaming input mode** was chosen.
+The request again said "implement the following feature" with no feature text. `sample13/` was a copy of sample12.
+The three topics offered were **External MCP servers** (left over from the sample12 shortlist), **Cost & usage
+tracking** and **Plugins**. **External MCP servers** was chosen.
 
 ## Step 2: Read the existing samples
 
-Each sample is the previous one plus one tab, so sample11 was read to make the new concept look like the others:
-
 | Read | To learn |
 |---|---|
-| `src/App.tsx`, `server/index.ts` | The tab list (`concepts` array) and one router per concept on `/api/cN` |
-| `server/sse.ts`, `src/lib/sse.ts` | `openSse()` / `pipe()` on the server, `streamPost()` in the browser |
-| `server/concepts/10-structured-interrupt.ts` | **Important:** Concept 10 Part B already had an input queue, a `Map` of open runs and control routes (`/interrupt`, `/send`, `/end`) |
-| `src/concepts/Concept10StructuredInterrupt.tsx` | The `Timeline` built from `text_delta` stream events and `control` SSE events |
-| `src/styles.css`, `src/components/MessageLog.tsx` | CSS classes to reuse, the raw message log |
-| `Tab10-…md`, `Tab11-Skills.md`, `Tab1-query().md` | The explanation format and the table of concepts |
+| `server/concepts/05-custom-tools.ts`, `Concept05CustomTools.tsx`, `Tab5-Custom-tools.md` | The in-process (`sdk`) servers this concept is compared with; the tool-call and `system/init` cards |
+| `server/concepts/12-streaming-input.ts`, `Tab12-Streaming-input.md` | The input queue, the sessions `Map` and the `control()` wrapper, reused for Part B |
+| `server/index.ts`, `server/sse.ts`, `src/App.tsx`, `src/styles.css` | Mounting a router, SSE, the tab list, CSS to reuse |
 
-Because Concept 10 had already shown the queue *as a tool for `interrupt()`*, Concept 12 had to go further: the live
-session itself is the topic.
+## Step 3: Check the types
 
-## Step 3: Check the SDK types
-
-The type file of the installed SDK (`0.3.281`, `sdk.d.ts`) was read, not guessed:
-
-| Type / method | What it gave the design |
-|---|---|
-| `query({ prompt: string \| AsyncIterable<SDKUserMessage> })` | The two modes to compare in Part C |
-| `SDKUserMessage.message` (`MessageParam`) | Content can be an array of blocks → image messages |
-| `SDKUserMessage.priority?: 'now' \| 'next' \| 'later'` | Sending while busy, with a priority |
-| `Query.setModel()`, `setPermissionMode()` | "Only available in streaming input mode" → Part B |
-| `Query.supportedModels()`, `getContextUsage({ detail })` | Filling the model list, drawing the context bar |
-| `Query.streamInput()` | Described as "used internally"; mentioned in the doc, not used |
-| `PermissionMode` | `default`, `acceptEdits`, `bypassPermissions`, `plan`, `dontAsk`, `auto` |
+- `sdk.d.ts` (`0.3.281`): `McpStdioServerConfig`, `McpHttpServerConfig`, `McpSSEServerConfig`, `McpServerStatus`
+  (five statuses, `source`, `error`, `tools`, `config`), and on `Query`: `mcpServerStatus()`, `toggleMcpServer()`,
+  `reconnectMcpServer()`, `setMcpServers()`.
+- `@modelcontextprotocol/sdk` `1.30.1` was already in `node_modules` (a dependency of the Agent SDK), with
+  `McpServer.registerTool()`, `StdioServerTransport` and `StreamableHTTPServerTransport`, and zod 4 support. It was
+  added to `package.json` as a direct dependency, because the lab now imports it.
 
 ## Step 4: Design the concept
 
-- **Part A: one `query()`, many turns.** A push queue as `prompt`; a `Map` of open sessions; `POST /send` pushes a
-  message, even while a turn is running; optional `priority` and image.
-- **Part B: change the live session.** One route per control request (`/model`, `/permission-mode`, `/context`), plus
-  `supportedModels()` right after start.
-- **Part C: generator vs. string.** A scripted `async function*` of three messages compared with a string prompt.
-- **The same safety setup as earlier concepts:** `cwd: sandbox/`, `settingSources: []`, `strictMcpConfig: true`,
-  Haiku as the default model.
-- **A permission demo that needs no UI prompt:** `tools: ["Read","Write","Glob"]` but `allowedTools` without `Write`,
-  and no `canUseTool`. Whether `Write` works then depends only on the permission mode.
+- **Real servers, written in the lab**, so nothing depends on the internet or on `npx` downloads:
+  `mcp-servers/notes-server.ts` (stdio, a separate program) and `/api/c13/mcp` (Streamable HTTP, stateless,
+  bearer token).
+- **Two servers for the failure cases**: `broken` (a command that doesn't exist) and the inventory server with a
+  wrong or missing token.
+- **`clock` (sdk)** in the same picker, to compare with Concept 5.
+- **Make the servers visible.** Their activity doesn't appear in the SDK message stream, so they report it: the notes
+  process POSTs to `/api/c13/log` (its URL arrives through `env`), the http route logs every JSON-RPC method and
+  status, and an `EventEmitter` forwards both as `mcp_log` SSE events.
+- **Part B on the Concept 12 session pattern**, with one route per control method.
+- **The same safety setup as before**: `cwd: sandbox/`, `settingSources: []`, `strictMcpConfig: true`, `tools: []`,
+  Haiku.
 
-## Step 5: Test the SDK behavior *before* writing the tab
-
-The UI text makes claims ("the message waits", "`now` interrupts", "string mode can't be controlled"). Instead of
-writing them from the docs, two scratch scripts ran against the real SDK with Haiku.
-
-**Experiment 1: a message pushed 1.5 s into a long answer, then `setModel()`** (run three times: no priority,
-`"now"`, `"later"`):
-
-| Finding | Effect on the design |
-|---|---|
-| No priority / `"later"`: the message waited and ran as its own turn afterwards | The UI allows **Send while busy** and shows "n waiting in the queue" |
-| `"now"`: the running turn ended in ~10 ms with `result/error_during_execution`, then a new turn started | Added a **Redirect** preset. With "Now just say BANANA" the model went back to counting, so the preset says "**Stop. Instead,** just say BANANA." |
-| One `system/init` **per turn**, same `session_id` | The session card counts inits and explains it |
-| `setModel()` echoes a `user` message `<local-command-stdout>Set model to …</local-command-stdout>` | The timeline shows it as "Echo from the CLI" |
-| A message **already queued** when `setModel()` was called still ran on the old model | Documented in the Tab |
-| `total_cost_usd` grew turn after turn: it is a **session total** | The timeline shows "this turn" (the difference) and "session total" |
-
-**Experiment 2: string mode, permission modes, image, context usage:**
-
-| Finding | Effect on the design |
-|---|---|
-| String prompt: `setModel()` *before* the loop resolved without error, but the turn still ran on Haiku | Documented as "not enforced, just no effect" |
-| String prompt: `setModel()` *after* the loop threw `Query closed before response received` | Part C calls `setModel()` after the loop to show this error |
-| `default` mode: `Write` → `system/permission_denied` + `permission_denials` | The *Create a file* scenario |
-| `setPermissionMode("acceptEdits")` → `system/status` with `permissionMode`, then `Write` succeeded | The timeline shows `system/status`; the Tab explains the before/after |
-| `plan` mode: no edit, but a plan file written to `~/.claude/plans/` | Documented as a warning (it writes outside the sandbox) |
-| An image block (the sample1 diagram) was described correctly | The image picker |
-| `getContextUsage({ detail: "summary" })` returns categories, `totalTokens`, `maxTokens`, `percentage` and a big UI grid | The route keeps only the numbers the tab draws |
-| `supportedModels()` returns aliases (`default`, `opus[1m]`, …) | The model `<select>` uses them, after two full model IDs |
-
-## Step 6: Implement it
-
-sample11 was copied into sample12 (with `robocopy`, including `node_modules`), then:
+## Step 5: Implement it
 
 | File | What was done |
 |---|---|
-| `server/concepts/12-streaming-input.ts` | New router: `userMessage()` (text + optional image + priority), the input queue, the sessions `Map`, a `control()` wrapper (find session → run → `409` on error), the Part A/B routes and `POST /script` |
-| `server/index.ts` | Mounted the router on `/api/c12`, and changed `express.json()` to `express.json({ limit: "10mb" })` because base64 images exceed the 100 KB default |
-| `src/concepts/Concept12StreamingInput.tsx` | New tab: `LiveSession` (Parts A and B), `PromptStyles` (Part C), a `Timeline` and a `ContextUsage` bar |
-| `src/App.tsx` | Added `{ id: 12, title: "Streaming input" }` |
-| `src/styles.css` | `.thumb`, `.meter`, `.delegation.warn` |
+| `mcp-servers/notes-server.ts` | New: `list_notes`, `search_notes`, `server_process`; logs to `LAB_LOG_URL`; stderr only |
+| `server/concepts/13-mcp-servers.ts` | New: inventory server + `/mcp`, `/log`, `/stock`, `serverConfig()`, `/query`, the session and control routes |
+| `server/index.ts` | Mounted on `/api/c13` |
+| `src/concepts/Concept13McpServers.tsx` | New: `OneQuery` (Part A), `LiveServers` + `Timeline` (Part B) |
+| `src/App.tsx`, `src/styles.css` | The tab; transport tags and status badges |
+| `tsconfig.json`, `package.json` | `mcp-servers/` type-checked; `@modelcontextprotocol/sdk` declared |
 
-Two problems were fixed while writing the code:
+`npx tsc --noEmit -p .` passed, and `npx vite build` succeeded.
 
-1. **The string variant lost its last event.** `pipe()` ends the SSE response, so a `send()` after `await pipe(q)`
-   would never reach the browser. The control call was moved into a wrapping generator
-   (`yield* q; then try setModel()`), so it runs *before* `pipe()` closes the response.
-2. **Images through SSE.** Echoing the base64 image back would double the traffic. The server echoes only the file
-   name; the browser keeps its own preview, keyed by a `clientId` it sends with the message.
+## Step 6: Test against the real SDK
 
-`npx tsc --noEmit -p .` then type-checked `src/` and `server/` with no errors.
+Only the Concept 13 router was mounted in a scratch server on port **3013** (`LAB_PORT=3013`) and driven by small
+Node scripts, like the browser does. Three problems with the *scratch* server (not the lab) were fixed on the way:
+a `.ts` file outside the package became CommonJS (renamed to `.mts`), and absolute Windows paths need `file://` URLs
+in ESM (`pathToFileURL`).
 
-## Step 7: Test the routes against the real SDK
+**Part A** worked the first time. What the runs showed, and what it changed:
 
-Ports 3001 and 5173 were busy (another sample was running), and that process was left alone. So only the Concept 12
-router was mounted on port **3012** in a scratch server, and driven like the browser does.
-
-**Part C** (`curl` + a small SSE summary script):
-
-| Variant | Result |
+| Finding | Effect |
 |---|---|
-| `generator` | 3 turns, one `session_id`; the third answer was "You're Ana, and you teach TypeScript." Total $0.0050 |
-| `string` | 1 turn, then `setModel()` → `Error: Query closed before response received`. Total $0.0020 |
+| Claude Code sends `server/discover` first (400 from this server), then `initialize` | Shown in the timeline; explained in the Tab |
+| The stdio child's cwd is `options.cwd`, and its parent is the Claude Code process | `server_process` returns both; scenario 1 asks for them |
+| `env` is **merged** with the inherited environment (`ANTHROPIC_API_KEY: true`) | A warning in the Tab: only run stdio servers you trust |
+| `source: "dynamic"` for configs, `"sdk"` for in-process | Shown in the status badges |
+| 401 → `failed` (not `needs-auth`), and the run still ends in `result/success` | Scenario 3's hint; the "check `mcp_servers` yourself" lesson |
+| An external tool outside `allowedTools` → `permission_denied` | Scenario 5 |
 
-**Parts A and B** (a Node script that opened `/session` and called every control route in order):
+**Part B** (one live session, every control in order): `pending` right after start, `failed` with
+`error: "Connection closed"` for `broken`, `disabled` after toggling, a new http handshake when re-enabled, a new pid
+after `reconnectMcpServer("notes")`, and `reconnectMcpServer("broken")` throwing.
 
-| Step | Result |
-|---|---|
-| *Create hello.txt* in `default` | Denied: `permission_denied`, 1 permission denial |
-| `setPermissionMode("acceptEdits")` + *Try again* | `Write` succeeded, `sandbox/hello.txt` = `hi` |
-| *Long answer*, then *Redirect* with `priority: "now"` 2.5 s later | `error_during_execution`, then `BANANA` |
-| `setModel("claude-sonnet-5")` + *Which model?* | "I'm Claude Sonnet 5.", next `system/init` showed `claude-sonnet-5` |
-| Image message | The diagram was described |
-| `getContextUsage()` | 6,757 / 1,000,000 tokens (1%) |
-| `end`, then `send` again | Loop ended normally; `send` answered `409 No open session` |
+**`setMcpServers()`**: a separate script called it five times. The result disproved the first code comment
+("replaces the SDK-given set"). Servers from `options.mcpServers` stay until a call names them, and after that they
+belong to the managed set. The comment and the Tab were corrected.
 
-The whole live session cost $0.0498. At the end, the scratch server was stopped and `sandbox/hello.txt` was removed
-(every new session also deletes it, so the permission demo is repeatable).
+Costs with Haiku: $0.0024 to $0.0076 per Part A run, $0.0289 for the whole Part B session.
 
-## Step 8: Write the explanation
+## Step 7: Run it in the real app
 
-- [Tab12-Streaming-input.md](Tab12-Streaming-input.md) explains the concept in the same format as Tabs 1 to 11: types,
-  Parts A/B/C in steps, the tested results, "what to take away", and things to try.
-- `Tab1-query().md`: Concept 12 was added to the table of concepts.
-
-## Step 9: The first run in the browser returned 404
-
-The first time the tab was opened, **Start session** failed with
-`Failed to load resource: 404 (Not Found) :5174/api/c12/session`.
-
-| Clue | Meaning |
-|---|---|
-| The page was on port **5174**, not 5173 | sample11's Vite was still using 5173, so Vite picked the next port |
-| Port 3001 belonged to a `node --watch … server/index.ts` started by another Claude Code session | sample12's server could not start (port in use) |
-| `vite.config.ts` proxies `/api` to `http://localhost:3001` | sample12's page was talking to an **older sample's server**, which has no `/api/c12` routes |
-
-**Fix:** that old server (and its `--watch` parent) was stopped, which frees port 3001. Then restart `npm run dev` in
-sample12 so its own server starts. No code was changed. Lesson: stop one sample before starting the next, because they all share port 3001.
+The real app (`npm run dev`) served scenario 4 through the Vite proxy: `notes` connected, `broken` failed,
+`list_notes` ran. Port 5173 was taken by another process, so Vite used 5174; the proxy still reached this sample's
+server on 3001. The dev processes were stopped afterwards.
 
 ## Files added or changed
 
 | File | Change |
 |---|---|
-| `server/concepts/12-streaming-input.ts` | New: live-session routes, control routes, `/script` |
-| `server/index.ts` | Mounts `/api/c12`; JSON body limit 10 MB |
-| `src/concepts/Concept12StreamingInput.tsx` | New: the Streaming input tab |
-| `src/App.tsx` | Adds the tab |
-| `src/styles.css` | Image thumbnail, context meter |
-| `Tab1-query().md` | Adds Concept 12 to the table |
-| `Tab12-Streaming-input.md` | Explanation of the concept |
-| `Build-steps.md` | This file: the steps followed to build it |
-| `readme.md` | Same content as `Tab12-Streaming-input.md` |
+| `mcp-servers/notes-server.ts` | New: the stdio MCP server |
+| `server/concepts/13-mcp-servers.ts` | New: the http MCP server, configs, Part A and Part B routes |
+| `server/index.ts` | Mounts `/api/c13` |
+| `src/concepts/Concept13McpServers.tsx` | New: the MCP servers tab |
+| `src/App.tsx`, `src/styles.css` | Tab, transport tags, status badges |
+| `package.json`, `tsconfig.json` | MCP SDK dependency, `mcp-servers/` in the type check |
+| `Tab1-query().md` | Adds Concept 13 to the table |
+| `Tab13-MCP-servers.md` | Explanation of the concept |
+| `Build-steps.md` | This file |
+| `readme.md` | Same content as `Tab13-MCP-servers.md` |

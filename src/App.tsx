@@ -11,6 +11,7 @@ import { Concept09SystemPrompts } from "./concepts/Concept09SystemPrompts";
 import { Concept10StructuredInterrupt } from "./concepts/Concept10StructuredInterrupt";
 import { Concept11Skills } from "./concepts/Concept11Skills";
 import { Concept12StreamingInput } from "./concepts/Concept12StreamingInput";
+import { Concept13McpServers } from "./concepts/Concept13McpServers";
 
 // Each new concept adds one entry here.
 const concepts = [
@@ -26,6 +27,7 @@ const concepts = [
   { id: 10, title: "Structured output & interrupt", Component: Concept10StructuredInterrupt },
   { id: 11, title: "Skills", Component: Concept11Skills },
   { id: 12, title: "Streaming input", Component: Concept12StreamingInput },
+  { id: 13, title: "MCP servers", Component: Concept13McpServers },
 ];
 
 export function App() {

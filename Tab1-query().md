@@ -18,6 +18,7 @@ Each concept has its own tab in the UI, its own server route, and is small enoug
 | 10 | [Structured output (`outputFormat`) and interrupting a run](Tab10-Structured-output-and-interrupt.md) | ✅ Done |
 | 11 | [Skills: `SKILL.md`, progressive disclosure, `skills`, `plugins`, preloading, `reloadSkills()`](Tab11-Skills.md) | ✅ Done |
 | 12 | [Streaming input mode: one live session, queued messages, `priority`, images, `setModel()`, `setPermissionMode()`, `getContextUsage()`](Tab12-Streaming-input.md) | ✅ Done |
+| 13 | [External MCP servers: `stdio`, `http` (`sse`), server status, `toggleMcpServer()`, `reconnectMcpServer()`, `setMcpServers()`](Tab13-MCP-servers.md) | ✅ Done |
 
 ---
 

@@ -11,6 +11,7 @@ import { concept09 } from "./concepts/09-system-prompts.js";
 import { concept10 } from "./concepts/10-structured-interrupt.js";
 import { concept11 } from "./concepts/11-skills.js";
 import { concept12 } from "./concepts/12-streaming-input.js";
+import { concept13 } from "./concepts/13-mcp-servers.js";
 
 const app = express();
 // 10mb instead of the default 100kb: Concept 12 sends images as base64 inside the JSON body.
@@ -29,6 +30,7 @@ app.use("/api/c9", concept09);
 app.use("/api/c10", concept10);
 app.use("/api/c11", concept11);
 app.use("/api/c12", concept12);
+app.use("/api/c13", concept13); // also serves the "inventory" MCP server on /api/c13/mcp
 
 app.listen(3001, () => {
   console.log("Agent SDK server on http://localhost:3001");

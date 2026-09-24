@@ -55,3 +55,7 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0 8px; }
 .meter { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
 .meter > div { height: 100%; background: var(--accent); }
 .delegation.warn { border-left-color: #d9a13b; }
+.tag-mcp-stdio { background: #5b7fb8; } .tag-mcp-http { background: #3f9a9a; } .tag-mcp-sdk { background: #8a5bb8; }
+.st-connected { background: #6a9a58; } .st-failed, .st-needs-auth { background: #c0504d; } .st-pending { background: #b8995b; } .st-disabled { background: #888; }
+.subtype.bad { color: #c0504d; }
+select.inline { width: auto; margin: 0 0 0 8px; padding: 2px 6px; font-size: 12px; }
