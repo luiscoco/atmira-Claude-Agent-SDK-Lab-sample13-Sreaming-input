@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Concept 3: the agent's working folder (recreated by the server)
+sandbox/

@@ -1,0 +1,39 @@
+import express from "express";
+import { concept01 } from "./concepts/01-query.js";
+import { concept02 } from "./concepts/02-options.js";
+import { concept03 } from "./concepts/03-tools.js";
+import { concept04 } from "./concepts/04-permissions.js";
+import { concept05 } from "./concepts/05-custom-tools.js";
+import { concept06 } from "./concepts/06-sessions.js";
+import { concept07 } from "./concepts/07-hooks.js";
+import { concept08 } from "./concepts/08-subagents.js";
+import { concept09 } from "./concepts/09-system-prompts.js";
+import { concept10 } from "./concepts/10-structured-interrupt.js";
+import { concept11 } from "./concepts/11-skills.js";
+import { concept12 } from "./concepts/12-streaming-input.js";
+
+const app = express();
+// 10mb instead of the default 100kb: Concept 12 sends images as base64 inside the JSON body.
+app.use(express.json({ limit: "10mb" }));
+
+// One router per concept: /api/c1/..., /api/c2/..., etc.
+app.use("/api/c1", concept01);
+app.use("/api/c2", concept02);
+app.use("/api/c3", concept03);
+app.use("/api/c4", concept04);
+app.use("/api/c5", concept05);
+app.use("/api/c6", concept06);
+app.use("/api/c7", concept07);
+app.use("/api/c8", concept08);
+app.use("/api/c9", concept09);
+app.use("/api/c10", concept10);
+app.use("/api/c11", concept11);
+app.use("/api/c12", concept12);
+
+app.listen(3001, () => {
+  console.log("Agent SDK server on http://localhost:3001");
+  // ANTHROPIC_API_KEY comes from .env (loaded by `--env-file-if-exists` in package.json).
+  // The SDK passes process.env to the Claude Code process, so no code is needed to use it.
+  const key = process.env.ANTHROPIC_API_KEY;
+  console.log(key ? `Auth: ANTHROPIC_API_KEY from .env (${key.slice(0, 10)}…${key.slice(-4)})` : "Auth: no API key, using Claude Code login");
+});
